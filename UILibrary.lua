@@ -1,393 +1,427 @@
---[[ Super Cool Blue Pill UI Library ]]--
+--[[ Melonity V2 Inspired Roblox UI Library ]]--
 
 local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Blur = Instance.new("BlurEffect")
+Blur.Size = 0
+Blur.Parent = game:GetService("Lighting")
+
 local UILibrary = {}
 UILibrary.__index = UILibrary
 
-local function create(class, props)
-    local inst = Instance.new(class)
-    for k, v in pairs(props) do
-        inst[k] = v
-    end
-    return inst
-end
-
--- Theme Colors
+-- Theme
 local theme = {
-    Background = Color3.fromRGB(18, 24, 37),
-    Section = Color3.fromRGB(24, 33, 54),
-    Accent = Color3.fromRGB(52, 120, 246), -- blue
-    Button = Color3.fromRGB(37, 45, 66),
-    Text = Color3.fromRGB(230,230,240),
-    ToggleOff = Color3.fromRGB(75, 87, 117),
-    SliderBG = Color3.fromRGB(34, 41, 61)
+    Accent = Color3.fromRGB(44, 210, 80), -- Melonity green
+    TabIdle = Color3.fromRGB(38, 45, 50),
+    TabActive = Color3.fromRGB(44, 210, 80),
+    TabTextIdle = Color3.fromRGB(170, 255, 180),
+    TabTextActive = Color3.fromRGB(255,255,255),
+    WindowBG = Color3.fromRGB(24, 27, 32),
+    SectionBG = Color3.fromRGB(32, 34, 39),
+    Button = Color3.fromRGB(37, 39, 46),
+    ToggleOff = Color3.fromRGB(60, 60, 60),
+    ToggleOn = Color3.fromRGB(44, 210, 80),
+    SliderBG = Color3.fromRGB(40, 42, 50),
+    SliderFill = Color3.fromRGB(44, 210, 80),
+    Text = Color3.fromRGB(230,240,230),
+    Shadow = Color3.fromRGB(10,10,10)
 }
 
--- Rounding utility
 local function roundify(inst, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 18)
-    corner.Parent = inst
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 12)
+    c.Parent = inst
+end
+
+local function shadowify(inst, spread)
+    local s = Instance.new("ImageLabel")
+    s.BackgroundTransparency = 1
+    s.Image = "rbxassetid://1316045217"
+    s.Size = UDim2.new(1,spread or 24,1,spread or 24)
+    s.Position = UDim2.new(0,-(spread or 12)/2,0,-(spread or 12)/2)
+    s.ImageColor3 = theme.Shadow
+    s.ImageTransparency = 0.8
+    s.ZIndex = inst.ZIndex-1
+    s.Parent = inst
 end
 
 function UILibrary:CreateWindow(title)
     local self = setmetatable({}, UILibrary)
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "MelonityUILib"
+    sg.Parent = game.CoreGui
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    sg.ResetOnSpawn = false
 
-    -- GUI Base
-    local sg = create("ScreenGui", {Name="Eps1llonHub_UI", Parent=game.CoreGui, ResetOnSpawn=false, ZIndexBehavior=Enum.ZIndexBehavior.Global})
-    local main = create("Frame", {
-        Size = UDim2.new(0, 410, 0, 500),
-        Position = UDim2.new(0.5, -205, 0.5, -250),
-        BackgroundColor3 = theme.Background,
-        BorderSizePixel = 0,
-        Visible = true,
-        Parent = sg
-    })
-    roundify(main, 16)
+    local window = Instance.new("Frame")
+    window.Size = UDim2.new(0, 520, 0, 410)
+    window.Position = UDim2.new(0.5, -260, 0.5, -205)
+    window.BackgroundColor3 = theme.WindowBG
+    window.Active = true
+    window.Draggable = true
+    window.BorderSizePixel = 0
+    window.Parent = sg
+    window.ZIndex = 10
+    roundify(window, 14)
+    shadowify(window, 32)
 
-    -- Title Bar
-    local titleBar = create("Frame", {
-        Size = UDim2.new(1, 0, 0, 44),
-        BackgroundColor3 = theme.Accent,
-        BorderSizePixel = 0,
-        Parent = main
-    })
-    roundify(titleBar, 16)
-    titleBar.ClipsDescendants = true
+    -- Blur Toggle Button
+    local blurBtn = Instance.new("TextButton")
+    blurBtn.Size = UDim2.new(0, 42, 0, 42)
+    blurBtn.Position = UDim2.new(1, -52, 0, 10)
+    blurBtn.BackgroundTransparency = 0.7
+    blurBtn.BackgroundColor3 = theme.SectionBG
+    blurBtn.Text = "🟢"
+    blurBtn.Font = Enum.Font.GothamBold
+    blurBtn.TextSize = 20
+    blurBtn.TextColor3 = theme.Accent
+    blurBtn.Parent = window
+    blurBtn.ZIndex = 21
+    roundify(blurBtn, 12)
 
-    local titleLbl = create("TextLabel", {
-        Text = "   " .. (title or "Hub UI"),
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(255,255,255),
-        Font = Enum.Font.GothamBold,
-        TextSize = 22,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = titleBar
-    })
+    -- Glass blur toggle logic
+    local glassOn = false
+    local function setBlur(state)
+        glassOn = state
+        TweenService:Create(Blur, TweenInfo.new(0.2), {Size = glassOn and 24 or 0}):Play()
+        blurBtn.Text = glassOn and "🟢" or "⚪"
+        blurBtn.TextColor3 = glassOn and theme.Accent or Color3.fromRGB(180,180,180)
+    end
+    blurBtn.MouseButton1Click:Connect(function() setBlur(not glassOn) end)
+    setBlur(false)
 
-    -- Resize Handle
-    local resize = create("Frame", {
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(1, -20, 1, -20),
-        BackgroundColor3 = theme.Accent,
-        BorderSizePixel = 0,
-        Parent = main
-    })
-    roundify(resize, 8)
-    resize.ZIndex = 4
+    -- Title
+    local titleBar = Instance.new("TextLabel")
+    titleBar.BackgroundTransparency = 1
+    titleBar.Size = UDim2.new(1, 0, 0, 46)
+    titleBar.Position = UDim2.new(0,0,0,0)
+    titleBar.Font = Enum.Font.GothamBold
+    titleBar.Text = "   " .. (title or "Melonity Hub")
+    titleBar.TextColor3 = theme.Accent
+    titleBar.TextSize = 24
+    titleBar.TextXAlignment = Enum.TextXAlignment.Left
+    titleBar.Parent = window
+    titleBar.ZIndex = 20
 
-    -- Dragging window
-    do
-        local dragging, dragStart, startPos
-        titleBar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = main.Position
+    -- Side tab bar
+    local tabbar = Instance.new("Frame")
+    tabbar.Size = UDim2.new(0, 110, 1, -32)
+    tabbar.Position = UDim2.new(0, 10, 0, 56)
+    tabbar.BackgroundTransparency = 0.4
+    tabbar.BackgroundColor3 = theme.SectionBG
+    tabbar.BorderSizePixel = 0
+    tabbar.Parent = window
+    tabbar.ZIndex = 12
+    roundify(tabbar, 10)
+
+    -- Tabs list
+    local tabLayout = Instance.new("UIListLayout")
+    tabLayout.Padding = UDim.new(0,8)
+    tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabLayout.Parent = tabbar
+
+    -- Main content holder
+    local content = Instance.new("Frame")
+    content.Size = UDim2.new(1, -140, 1, -60)
+    content.Position = UDim2.new(0, 130, 0, 56)
+    content.BackgroundTransparency = 0.55
+    content.BackgroundColor3 = theme.SectionBG
+    content.BorderSizePixel = 0
+    content.Parent = window
+    content.ZIndex = 13
+    roundify(content, 14)
+
+    -- Tabs logic
+    self._tabs = {}
+    self._activeTab = nil
+    self._tabBar = tabbar
+    self._content = content
+
+    function self:AddTab(tabname)
+        local tab = {}
+        tab.Button = Instance.new("TextButton")
+        tab.Button.Size = UDim2.new(1, -8, 0, 42)
+        tab.Button.BackgroundColor3 = theme.TabIdle
+        tab.Button.TextColor3 = theme.TabTextIdle
+        tab.Button.Font = Enum.Font.GothamBold
+        tab.Button.Text = tabname
+        tab.Button.TextSize = 18
+        tab.Button.BorderSizePixel = 0
+        tab.Button.Parent = tabbar
+        tab.Button.ZIndex = 13
+        roundify(tab.Button, 8)
+
+        tab.Holder = Instance.new("Frame")
+        tab.Holder.BackgroundTransparency = 1
+        tab.Holder.Size = UDim2.new(1,0,1,0)
+        tab.Holder.Visible = false
+        tab.Holder.Parent = content
+        tab.Holder.ZIndex = 14
+
+        tab._sections = {}
+        tab._nextY = 18
+
+        -- Tab switch logic
+        tab.Button.MouseButton1Click:Connect(function()
+            for _, t in pairs(self._tabs) do
+                t.Button.BackgroundColor3 = theme.TabIdle
+                t.Button.TextColor3 = theme.TabTextIdle
+                t.Holder.Visible = false
             end
+            tab.Button.BackgroundColor3 = theme.TabActive
+            tab.Button.TextColor3 = theme.TabTextActive
+            tab.Holder.Visible = true
+            self._activeTab = tab
         end)
-        titleBar.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
+
+        table.insert(self._tabs, tab)
+
+        -- Auto-select first tab
+        if #self._tabs == 1 then
+            tab.Button.BackgroundColor3 = theme.TabActive
+            tab.Button.TextColor3 = theme.TabTextActive
+            tab.Holder.Visible = true
+            self._activeTab = tab
+        end
+
+        function tab:AddSection(secname)
+            local section = {}
+            section.Frame = Instance.new("Frame")
+            section.Frame.Size = UDim2.new(1, -28, 0, 44)
+            section.Frame.Position = UDim2.new(0, 14, 0, tab._nextY)
+            section.Frame.BackgroundColor3 = theme.WindowBG
+            section.Frame.BorderSizePixel = 0
+            section.Frame.Parent = tab.Holder
+            section.Frame.ZIndex = 15
+            roundify(section.Frame, 10)
+
+            local lbl = Instance.new("TextLabel")
+            lbl.Text = secname
+            lbl.Size = UDim2.new(1, -16, 0, 28)
+            lbl.Position = UDim2.new(0, 12, 0, 6)
+            lbl.BackgroundTransparency = 1
+            lbl.TextColor3 = theme.Accent
+            lbl.Font = Enum.Font.Gotham
+            lbl.TextSize = 18
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            lbl.Parent = section.Frame
+            lbl.ZIndex = 16
+
+            section._nextY = 38
+            section._frame = section.Frame
+
+            -- Control adding
+            function section:AddButton(text, callback)
+                local btn = Instance.new("TextButton")
+                btn.Size = UDim2.new(1, -24, 0, 36)
+                btn.Position = UDim2.new(0, 12, 0, section._nextY)
+                btn.BackgroundColor3 = theme.Button
+                btn.Text = text
+                btn.TextColor3 = theme.Text
+                btn.Font = Enum.Font.GothamSemibold
+                btn.TextSize = 16
+                btn.BorderSizePixel = 0
+                btn.AutoButtonColor = false
+                btn.Parent = section.Frame
+                btn.ZIndex = 17
+                roundify(btn, 10)
+                btn.MouseButton1Click:Connect(callback)
+                btn.MouseEnter:Connect(function() btn.BackgroundColor3 = theme.Accent end)
+                btn.MouseLeave:Connect(function() btn.BackgroundColor3 = theme.Button end)
+                section._nextY = section._nextY + 40
+                return btn
             end
-        end)
-        UIS.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = input.Position - dragStart
-                main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+
+            function section:AddToggle(text, callback)
+                local toggled = false
+                local toggleBG = Instance.new("Frame")
+                toggleBG.Size = UDim2.new(0, 44, 0, 22)
+                toggleBG.Position = UDim2.new(1, -54, 0, section._nextY+8)
+                toggleBG.BackgroundColor3 = theme.ToggleOff
+                toggleBG.BorderSizePixel = 0
+                toggleBG.Parent = section.Frame
+                toggleBG.ZIndex = 17
+                roundify(toggleBG, 11)
+
+                local dot = Instance.new("Frame")
+                dot.Size = UDim2.new(0, 16, 0, 16)
+                dot.Position = UDim2.new(0, 3, 0.5, -8)
+                dot.BackgroundColor3 = Color3.fromRGB(240,240,240)
+                dot.BorderSizePixel = 0
+                dot.Parent = toggleBG
+                dot.ZIndex = 18
+                roundify(dot, 8)
+
+                local lbl = Instance.new("TextLabel")
+                lbl.Text = text
+                lbl.Size = UDim2.new(1, -62, 0, 24)
+                lbl.Position = UDim2.new(0, 10, 0, section._nextY+5)
+                lbl.BackgroundTransparency = 1
+                lbl.TextColor3 = theme.Text
+                lbl.Font = Enum.Font.Gotham
+                lbl.TextSize = 16
+                lbl.TextXAlignment = Enum.TextXAlignment.Left
+                lbl.Parent = section.Frame
+                lbl.ZIndex = 17
+
+                local function setToggle(state)
+                    toggled = state
+                    if toggled then
+                        toggleBG.BackgroundColor3 = theme.ToggleOn
+                        dot.Position = UDim2.new(1, -19, 0.5, -8)
+                        dot.BackgroundColor3 = Color3.fromRGB(255,255,255)
+                    else
+                        toggleBG.BackgroundColor3 = theme.ToggleOff
+                        dot.Position = UDim2.new(0, 3, 0.5, -8)
+                        dot.BackgroundColor3 = Color3.fromRGB(240,240,240)
+                    end
+                    callback(toggled)
+                end
+
+                toggleBG.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        setToggle(not toggled)
+                    end
+                end)
+                lbl.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        setToggle(not toggled)
+                    end
+                end)
+                setToggle(false)
+                section._nextY = section._nextY + 36
+                return toggleBG
             end
-        end)
+
+            function section:AddSlider(text, min, max, default, callback)
+                min, max = min or 0, max or 100
+                default = default or min
+                local lbl = Instance.new("TextLabel")
+                lbl.Text = text
+                lbl.Size = UDim2.new(1, -70, 0, 24)
+                lbl.Position = UDim2.new(0, 10, 0, section._nextY+8)
+                lbl.BackgroundTransparency = 1
+                lbl.TextColor3 = theme.Text
+                lbl.Font = Enum.Font.Gotham
+                lbl.TextSize = 16
+                lbl.TextXAlignment = Enum.TextXAlignment.Left
+                lbl.Parent = section.Frame
+                lbl.ZIndex = 17
+
+                local sliderBG = Instance.new("Frame")
+                sliderBG.Size = UDim2.new(1, -90, 0, 16)
+                sliderBG.Position = UDim2.new(0, 10, 0, section._nextY+30)
+                sliderBG.BackgroundColor3 = theme.SliderBG
+                sliderBG.BorderSizePixel = 0
+                sliderBG.Parent = section.Frame
+                sliderBG.ZIndex = 17
+                roundify(sliderBG, 8)
+
+                local fill = Instance.new("Frame")
+                fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+                fill.BackgroundColor3 = theme.SliderFill
+                fill.BorderSizePixel = 0
+                fill.Parent = sliderBG
+                fill.ZIndex = 18
+                roundify(fill, 8)
+
+                local dragBtn = Instance.new("TextButton")
+                dragBtn.Size = UDim2.new(0, 22, 0, 22)
+                dragBtn.Position = UDim2.new((default-min)/(max-min), -11, 0.5, -11)
+                dragBtn.BackgroundColor3 = theme.SliderFill
+                dragBtn.BorderSizePixel = 0
+                dragBtn.Text = ""
+                dragBtn.AutoButtonColor = false
+                dragBtn.Parent = sliderBG
+                dragBtn.ZIndex = 19
+                roundify(dragBtn, 11)
+
+                local valueLbl = Instance.new("TextLabel")
+                valueLbl.Text = tostring(default)
+                valueLbl.Size = UDim2.new(0, 40, 0, 22)
+                valueLbl.Position = UDim2.new(1, 8, 0, section._nextY+26)
+                valueLbl.BackgroundTransparency = 1
+                valueLbl.TextColor3 = theme.Accent
+                valueLbl.Font = Enum.Font.GothamBold
+                valueLbl.TextSize = 16
+                valueLbl.TextXAlignment = Enum.TextXAlignment.Right
+                valueLbl.Parent = section.Frame
+                valueLbl.ZIndex = 17
+
+                local val = default
+                local function setSlider(x)
+                    x = math.clamp(x, 0, 1)
+                    local v = math.floor(min + (max-min)*x + 0.5)
+                    fill.Size = UDim2.new(x, 0, 1, 0)
+                    dragBtn.Position = UDim2.new(x, -11, 0.5, -11)
+                    valueLbl.Text = tostring(v)
+                    if v ~= val then
+                        val = v
+                        callback(v)
+                    end
+                end
+                setSlider((default-min)/(max-min))
+
+                local dragging = false
+                local function getX(input)
+                    local rel = input.Position.X - sliderBG.AbsolutePosition.X
+                    return rel/math.max(1, sliderBG.AbsoluteSize.X)
+                end
+                dragBtn.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        dragging = true
+                    end
+                end)
+                dragBtn.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        dragging = false
+                    end
+                end)
+                sliderBG.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        setSlider(getX(input))
+                        dragging = true
+                    end
+                end)
+                UIS.InputChanged:Connect(function(input)
+                    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                        setSlider(getX(input))
+                    end
+                end)
+                UIS.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        dragging = false
+                    end
+                end)
+
+                section._nextY = section._nextY + 52
+                return sliderBG
+            end
+
+            tab._nextY = tab._nextY + section._nextY + 8
+            return section
+        end
+
+        return tab
     end
 
-    -- Resizing
-    do
-        local resizing, startPos, startSize, dragStart
-        resize.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                resizing = true
-                dragStart = input.Position
-                startPos = main.Position
-                startSize = main.Size
-            end
-        end)
-        resize.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                resizing = false
-            end
-        end)
-        UIS.InputChanged:Connect(function(input)
-            if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = input.Position - dragStart
-                local newX = math.max(330, startSize.X.Offset + delta.X)
-                local newY = math.max(180, startSize.Y.Offset + delta.Y)
-                main.Size = UDim2.new(0, newX, 0, newY)
-            end
-        end)
-    end
-
-    -- Section layout
-    local scroll = create("ScrollingFrame", {
-        Size = UDim2.new(1, 0, 1, -54),
-        Position = UDim2.new(0, 0, 0, 54),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        CanvasSize = UDim2.new(0,0,0,0),
-        ScrollBarThickness = 4,
-        Parent = main,
-        TopImage = "",
-        BottomImage = ""
-    })
-
-    -- Toggle visible with Insert
-    UIS.InputBegan:Connect(function(input, gameProcessed)
-        if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
-            main.Visible = not main.Visible
+    -- Insert key toggles visibility
+    UIS.InputBegan:Connect(function(input, gp)
+        if not gp and input.KeyCode == Enum.KeyCode.Insert then
+            window.Visible = not window.Visible
         end
     end)
 
-    self._main = main
-    self._scroll = scroll
-    self._sections = {}
-    self._nextY = 10
+    -- Clean up blur if GUI closes/destroys
+    sg.AncestryChanged:Connect(function()
+        if not sg:IsDescendantOf(game) then
+            Blur.Size = 0
+            Blur:Destroy()
+        end
+    end)
+
     return self
-end
-
-function UILibrary:AddSection(name)
-    local section = create("Frame", {
-        Size = UDim2.new(1, -28, 0, 44),
-        Position = UDim2.new(0, 14, 0, self._nextY),
-        BackgroundColor3 = theme.Section,
-        BorderSizePixel = 0,
-        Parent = self._scroll
-    })
-    roundify(section, 14)
-
-    local lbl = create("TextLabel", {
-        Text = name,
-        Size = UDim2.new(1, -24, 0, 30),
-        Position = UDim2.new(0, 12, 0, 4),
-        BackgroundTransparency = 1,
-        TextColor3 = theme.Accent,
-        Font = Enum.Font.Gotham,
-        TextSize = 19,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = section
-    })
-
-    self._nextY = self._nextY + 54
-    self._scroll.CanvasSize = UDim2.new(0,0,0,self._nextY)
-    return section
-end
-
-function UILibrary:AddButton(section, text, callback)
-    local btn = create("TextButton", {
-        Size = UDim2.new(1, -24, 0, 36),
-        Position = UDim2.new(0, 12, 0, #section:GetChildren()*38+30),
-        BackgroundColor3 = theme.Button,
-        Text = text,
-        TextColor3 = theme.Text,
-        Font = Enum.Font.GothamSemibold,
-        TextSize = 18,
-        BorderSizePixel = 0,
-        AutoButtonColor = false,
-        Parent = section
-    })
-    roundify(btn, 18)
-    btn.MouseButton1Click:Connect(callback)
-    -- hover effect
-    btn.MouseEnter:Connect(function()
-        btn.BackgroundColor3 = theme.Accent
-    end)
-    btn.MouseLeave:Connect(function()
-        btn.BackgroundColor3 = theme.Button
-    end)
-    return btn
-end
-
-function UILibrary:AddToggle(section, text, callback)
-    local toggled = false
-    local frame = create("Frame", {
-        Size = UDim2.new(1, -24, 0, 36),
-        Position = UDim2.new(0, 12, 0, #section:GetChildren()*38+30),
-        BackgroundTransparency = 1,
-        Parent = section
-    })
-
-    -- Pill toggle background
-    local bg = create("Frame", {
-        Size = UDim2.new(0, 54, 0, 26),
-        Position = UDim2.new(1, -62, 0, 5),
-        BackgroundColor3 = theme.ToggleOff,
-        BorderSizePixel = 0,
-        Parent = frame
-    })
-    roundify(bg, 13)
-
-    -- Blue circle indicator
-    local dot = create("Frame", {
-        Size = UDim2.new(0, 18, 0, 18),
-        Position = UDim2.new(0, 4, 0.5, -9),
-        BackgroundColor3 = Color3.fromRGB(230,230,240),
-        BorderSizePixel = 0,
-        Parent = bg
-    })
-    roundify(dot, 9)
-
-    -- Toggle label
-    local lbl = create("TextLabel", {
-        Text = text,
-        Size = UDim2.new(1, -68, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-        TextColor3 = theme.Text,
-        Font = Enum.Font.Gotham,
-        TextSize = 18,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = frame
-    })
-
-    local function setToggle(state)
-        toggled = state
-        if toggled then
-            bg.BackgroundColor3 = theme.Accent
-            dot.Position = UDim2.new(1, -22, 0.5, -9)
-            dot.BackgroundColor3 = Color3.fromRGB(255,255,255)
-        else
-            bg.BackgroundColor3 = theme.ToggleOff
-            dot.Position = UDim2.new(0, 4, 0.5, -9)
-            dot.BackgroundColor3 = Color3.fromRGB(230,230,240)
-        end
-        callback(toggled)
-    end
-
-    bg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            setToggle(not toggled)
-        end
-    end)
-    lbl.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            setToggle(not toggled)
-        end
-    end)
-
-    setToggle(false)
-    return frame
-end
-
-function UILibrary:AddSlider(section, text, min, max, default, callback)
-    min, max = min or 0, max or 100
-    default = default or min
-
-    local frame = create("Frame", {
-        Size = UDim2.new(1, -24, 0, 48),
-        Position = UDim2.new(0, 12, 0, #section:GetChildren()*50+30),
-        BackgroundTransparency = 1,
-        Parent = section
-    })
-
-    local lbl = create("TextLabel", {
-        Text = text,
-        Size = UDim2.new(1, -74, 0, 24),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-        TextColor3 = theme.Text,
-        Font = Enum.Font.Gotham,
-        TextSize = 18,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = frame
-    })
-
-    -- Pill slider
-    local sliderBG = create("Frame", {
-        Size = UDim2.new(1, -58, 0, 16),
-        Position = UDim2.new(0, 0, 0, 30),
-        BackgroundColor3 = theme.SliderBG,
-        BorderSizePixel = 0,
-        Parent = frame
-    })
-    roundify(sliderBG, 8)
-
-    local fill = create("Frame", {
-        Size = UDim2.new((default-min)/(max-min), 0, 1, 0),
-        BackgroundColor3 = theme.Accent,
-        BorderSizePixel = 0,
-        Parent = sliderBG
-    })
-    roundify(fill, 8)
-
-    local dragBtn = create("TextButton", {
-        Size = UDim2.new(0, 24, 0, 24),
-        Position = UDim2.new((default-min)/(max-min), -12, 0.5, -12),
-        BackgroundColor3 = theme.Accent,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        Parent = sliderBG
-    })
-    roundify(dragBtn, 12)
-
-    -- Value label
-    local valueLbl = create("TextLabel", {
-        Text = tostring(default),
-        Size = UDim2.new(0, 48, 0, 24),
-        Position = UDim2.new(1, 6, 0, 18),
-        BackgroundTransparency = 1,
-        TextColor3 = theme.Accent,
-        Font = Enum.Font.GothamBold,
-        TextSize = 18,
-        TextXAlignment = Enum.TextXAlignment.Right,
-        Parent = frame
-    })
-
-    local val = default
-    local function setSlider(x)
-        x = math.clamp(x, 0, 1)
-        local v = math.floor(min + (max-min)*x + 0.5)
-        fill.Size = UDim2.new(x, 0, 1, 0)
-        dragBtn.Position = UDim2.new(x, -12, 0.5, -12)
-        valueLbl.Text = tostring(v)
-        if v ~= val then
-            val = v
-            callback(v)
-        end
-    end
-    setSlider((default-min)/(max-min))
-
-    local dragging = false
-    local function getX(input)
-        local rel = input.Position.X - sliderBG.AbsolutePosition.X
-        return rel/math.max(1, sliderBG.AbsoluteSize.X)
-    end
-    dragBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-        end
-    end)
-    dragBtn.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    sliderBG.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            setSlider(getX(input))
-            dragging = true
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            setSlider(getX(input))
-        end
-    end)
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-
-    return frame
 end
 
 return UILibrary
