@@ -1,8 +1,8 @@
 --// Eps1llonUI Library | Modular, Mobile-Ready GUI (2025)
---// Built for external/executor injection. Uses your design & layout.
+--// Updated: 2025-07-12 for full responsive sections + invisible resize handle
 
 local Eps1llonUI = {}
-Eps1llonUI._VERSION = "2025.07.11"
+Eps1llonUI._VERSION = "2025.07.12"
 
 local player = game.Players.LocalPlayer
 local TweenService = game:GetService('TweenService')
@@ -130,29 +130,24 @@ outlineContentFrame.Thickness = 2
 outlineContentFrame.Color = Color3.fromRGB(31, 81, 138)
 outlineContentFrame.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
--- RESIZE CORNER (Bottom-Right)
-local resizeCorner = Instance.new('Frame', mainFrame)
-resizeCorner.Size = UDim2.new(0, 20, 0, 20)
-resizeCorner.Position = UDim2.new(1, -20, 1, -20)
+-- FULLY TRANSPARENT, LARGER RESIZE CORNER
+local resizeCorner = Instance.new('TextButton', mainFrame)
+resizeCorner.Size = UDim2.new(0, 40, 0, 40)
+resizeCorner.Position = UDim2.new(1, -40, 1, -40)
 resizeCorner.BackgroundTransparency = 1
-resizeCorner.Active = true
+resizeCorner.Text = ""
+resizeCorner.AutoButtonColor = false
 resizeCorner.ZIndex = 10
+resizeCorner.Active = true
 
--- Visual indicator for resize corner
-local resizeIndicator = Instance.new('Frame', resizeCorner)
-resizeIndicator.Size = UDim2.new(0, 12, 0, 12)
-resizeIndicator.Position = UDim2.new(1, -12, 1, -12)
-resizeIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-resizeIndicator.BackgroundTransparency = 0.7
-resizeIndicator.BorderSizePixel = 0
-Instance.new('UICorner', resizeIndicator).CornerRadius = UDim.new(0, 2)
+-- (NO visual indicator at all; it's fully transparent and invisible!)
 
 -- Resize logic
 local MIN_WIDTH, MIN_HEIGHT = 400, 300
 local MAX_WIDTH, MAX_HEIGHT = 1000, 700
 local resizing, resizeStart, startSize = false, nil, nil
 
--- ========== BEGIN RESPONSIVE SECTION CONTENT ==========
+-- === RESPONSIVE SECTION CONTENT ===
 
 -- Responsive resize of section contents:
 local function ResizeSectionContents()
@@ -160,31 +155,26 @@ local function ResizeSectionContents()
         if section:IsA("Frame") and section.Visible then
             -- Use the visible size of contentFrame
             local frameW, frameH = contentFrame.AbsoluteSize.X, contentFrame.AbsoluteSize.Y
-            local childCount = 0
-            -- Only count UI elements (skip UIStroke, UICorner, etc)
+            -- Count vertical stackable elements only
+            local children = {}
             for _, child in ipairs(section:GetChildren()) do
-                if child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("Frame") then
-                    childCount = childCount + 1
+                if child:IsA("TextButton") or child:IsA("TextLabel") or (child:IsA("Frame") and child.Name ~= "__SectionHeaderContainer") then
+                    table.insert(children, child)
                 end
             end
-            local spacing = math.max(6, math.floor(frameH * 0.015))
+            local spacing = math.max(6, math.floor(frameH * 0.02))
             local padX, padY = math.floor(frameW * 0.045), math.floor(frameH * 0.035)
-            local elementW = math.max(math.floor(frameW * 0.75), 120)
-            local elementH = math.max(math.floor(frameH * 0.08), 24)
-
+            local elementW = math.max(math.floor(frameW * 0.90), 120)
             local y = padY
-            for _, child in ipairs(section:GetChildren()) do
-                if child:IsA("TextButton") or child:IsA("TextLabel") or child.Name == "Frame" or child:IsA("Frame") then
-                    child.Size = UDim2.new(0, elementW, 0, elementH)
-                    child.Position = UDim2.new(0, padX, 0, y)
-                    y = y + elementH + spacing
-                end
+            for _, child in ipairs(children) do
+                local height = child.AbsoluteSize.Y > 0 and child.AbsoluteSize.Y or math.max(math.floor(frameH * 0.11), 32)
+                child.Size = UDim2.new(0, elementW, 0, height)
+                child.Position = UDim2.new(0, padX, 0, y)
+                y = y + height + spacing
             end
         end
     end
 end
-
--- ========== END RESPONSIVE SECTION CONTENT ==========
 
 local function updateContentPositions()
     -- Update sidebar size
@@ -193,8 +183,9 @@ local function updateContentPositions()
     contentFrame.Size = UDim2.new(0, mainFrame.Size.X.Offset - 170, 0, mainFrame.Size.Y.Offset - 80)
     -- Update underline
     underline.Size = UDim2.new(1, 0, 0, 4)
-    -- Update resize corner position
-    resizeCorner.Position = UDim2.new(1, -20, 1, -20)
+    -- Update resize corner position/size
+    resizeCorner.Position = UDim2.new(1, -40, 1, -40)
+    resizeCorner.Size = UDim2.new(0, 40, 0, 40)
     -- Responsive section contents
     ResizeSectionContents()
 end
@@ -204,12 +195,9 @@ resizeCorner.InputBegan:Connect(function(input)
         resizing = true
         resizeStart = input.Position
         startSize = mainFrame.Size
-        -- Visual feedback
-        resizeIndicator.BackgroundTransparency = 0.3
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 resizing = false
-                resizeIndicator.BackgroundTransparency = 0.7
             end
         end)
     end
@@ -237,26 +225,12 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or isTouch(input) then
         if resizing then
             resizing = false
-            resizeIndicator.BackgroundTransparency = 0.7
         end
     end
 end)
 
 -- Touch-specific resize handling for mobile
-resizeCorner.TouchTap:Connect(function() end) -- Prevents accidental taps
-
--- Add hover effect for desktop
-resizeCorner.MouseEnter:Connect(function()
-    if not IS_MOBILE then
-        resizeIndicator.BackgroundTransparency = 0.5
-    end
-end)
-
-resizeCorner.MouseLeave:Connect(function()
-    if not resizing and not IS_MOBILE then
-        resizeIndicator.BackgroundTransparency = 0.7
-    end
-end)
+resizeCorner.TouchTap:Connect(function() end)
 
 -- TABS
 local _TABS = {
@@ -418,11 +392,9 @@ local function setMainVisible(val)
     minimizedButton.Visible = not val
 end
 
--- Updated minimize click to account for dynamic sizing
 minimize.MouseButton1Click:Connect(function()
     animateObj(mainFrame, 1, 0, 0.14, 1, 0.22, function()
         setMainVisible(false)
-        -- Position minimized button relative to screen size
         minimizedButton.Position = UDim2.new(0, 20, 0, 20)
         animateObj(minimizedButton, 0, 1, 1, 0.08, 0.22)
     end)
@@ -441,7 +413,8 @@ minimizedButton.TouchTap:Connect(function()
     end)
 end)
 
--- PUBLIC: API
+-- === PUBLIC: API ===
+
 function Eps1llonUI:AddButton(tab, opts)
     local section = tabSections[tab]
     assert(section, "Tab "..tostring(tab).." does not exist.")
@@ -647,5 +620,10 @@ function Eps1llonUI:SetSize(width, height)
     mainFrame.Size = UDim2.new(0, width, 0, height)
     updateContentPositions()
 end
+
+-- Return handles for external reference
+Eps1llonUI.MainFrame = mainFrame
+Eps1llonUI.ContentFrame = contentFrame
+Eps1llonUI.Sidebar = sidebar
 
 return Eps1llonUI
