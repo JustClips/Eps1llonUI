@@ -581,7 +581,7 @@ function Eps1llonUI:AddSlider(tab, opts)
             setSliderPos(input.Position.X - barBG.AbsolutePosition.X)
         end
     end)
-    ResizeSectionContents()
+    ResizeSectionContents() 
     return frame, valText
 end
 
