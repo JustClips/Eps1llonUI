@@ -479,6 +479,11 @@ local themes = {
     Green  = { main = Color3.fromRGB(25,35,25),   accent = Color3.fromRGB(69,255,69)   },
     Purple = { main = Color3.fromRGB(25,25,35),   accent = Color3.fromRGB(138,43,226)  },
     Yellow = { main = Color3.fromRGB(35,35,25),   accent = Color3.fromRGB(255,255,69)  },
+    Black  = { main = Color3.fromRGB(20,20,20),   accent = Color3.fromRGB(180,180,180) },
+    Orange = { main = Color3.fromRGB(35,20,0),    accent = Color3.fromRGB(255,165,0)   },
+    White  = { main = Color3.fromRGB(240,240,240),accent = Color3.fromRGB(200,200,200) },
+    Brown  = { main = Color3.fromRGB(60,40,20),   accent = Color3.fromRGB(160,82,45)   },
+    Pink   = { main = Color3.fromRGB(35,20,30),   accent = Color3.fromRGB(255,105,180) },
 }
 local currentTheme = "Red"
 local function applyTheme(name)
@@ -506,10 +511,10 @@ end)
 do
     local uiSettings = tabSections["UI Settings"]
 
-    -- Row 1: Toggle Keybind
+    -- Row 1: Toggle Keybind (lowered)
     local row1 = Instance.new("Frame", uiSettings)
     row1.Size = UDim2.new(1, -40, 0, 30)
-    row1.Position = UDim2.new(0, 20, 0, 20)
+    row1.Position = UDim2.new(0, 20, 0, 30)         -- was 20, now 30
     row1.BackgroundTransparency = 1
 
     local keyLabel = Instance.new("TextLabel", row1)
@@ -543,10 +548,10 @@ do
         end)
     end)
 
-    -- Row 2: Theme Dropdown
+    -- Row 2: Theme Dropdown (lowered)
     local row2 = Instance.new("Frame", uiSettings)
     row2.Size = UDim2.new(1, -40, 0, 30)
-    row2.Position = UDim2.new(0, 20, 0, 70)
+    row2.Position = UDim2.new(0, 20, 0, 80)         -- was 70, now 80
     row2.BackgroundTransparency = 1
 
     local themeLabel = Instance.new("TextLabel", row2)
@@ -558,7 +563,7 @@ do
     themeLabel.BackgroundTransparency = 1
     themeLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    local themeNames = {"Red","Green","Purple","Yellow"}
+    local themeNames = {"Red","Green","Purple","Yellow","Black","Orange","White","Brown","Pink"}
 
     local themeBtn = Instance.new("TextButton", row2)
     themeBtn.Size = UDim2.new(0.4, 0, 1, 0)
