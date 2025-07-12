@@ -130,20 +130,20 @@ outlineContentFrame.Thickness = 2
 outlineContentFrame.Color = Color3.fromRGB(31, 81, 138)
 outlineContentFrame.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
--- RESIZE CORNER (Bottom-Right) | EDITED SECTION
+-- RESIZE CORNER (Bottom-Right)
 local resizeCorner = Instance.new('Frame', mainFrame)
-resizeCorner.Size = UDim2.new(0, 32, 0, 32) -- Was 20x20, now 32x32 for a larger drag zone
-resizeCorner.Position = UDim2.new(1, -32, 1, -32) -- Adjusted for new size
+resizeCorner.Size = UDim2.new(0, 20, 0, 20)
+resizeCorner.Position = UDim2.new(1, -20, 1, -20)
 resizeCorner.BackgroundTransparency = 1
 resizeCorner.Active = true
 resizeCorner.ZIndex = 10
 
--- Visual indicator for resize corner (now always 100% transparent/invisible)
+-- Visual indicator for resize corner
 local resizeIndicator = Instance.new('Frame', resizeCorner)
-resizeIndicator.Size = UDim2.new(0, 24, 0, 24) -- Was 12x12, scale up for hitbox but remains invisible
-resizeIndicator.Position = UDim2.new(1, -24, 1, -24)
+resizeIndicator.Size = UDim2.new(0, 12, 0, 12)
+resizeIndicator.Position = UDim2.new(1, -12, 1, -12)
 resizeIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-resizeIndicator.BackgroundTransparency = 1 -- 100% transparent, invisible always
+resizeIndicator.BackgroundTransparency = 0.7
 resizeIndicator.BorderSizePixel = 0
 Instance.new('UICorner', resizeIndicator).CornerRadius = UDim.new(0, 2)
 
@@ -152,18 +152,51 @@ local MIN_WIDTH, MIN_HEIGHT = 400, 300
 local MAX_WIDTH, MAX_HEIGHT = 1000, 700
 local resizing, resizeStart, startSize = false, nil, nil
 
+-- ========== BEGIN RESPONSIVE SECTION CONTENT ==========
+
+-- Responsive resize of section contents:
+local function ResizeSectionContents()
+    for _, section in pairs(contentFrame:GetChildren()) do
+        if section:IsA("Frame") and section.Visible then
+            -- Use the visible size of contentFrame
+            local frameW, frameH = contentFrame.AbsoluteSize.X, contentFrame.AbsoluteSize.Y
+            local childCount = 0
+            -- Only count UI elements (skip UIStroke, UICorner, etc)
+            for _, child in ipairs(section:GetChildren()) do
+                if child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("Frame") then
+                    childCount = childCount + 1
+                end
+            end
+            local spacing = math.max(6, math.floor(frameH * 0.015))
+            local padX, padY = math.floor(frameW * 0.045), math.floor(frameH * 0.035)
+            local elementW = math.max(math.floor(frameW * 0.75), 120)
+            local elementH = math.max(math.floor(frameH * 0.08), 24)
+
+            local y = padY
+            for _, child in ipairs(section:GetChildren()) do
+                if child:IsA("TextButton") or child:IsA("TextLabel") or child.Name == "Frame" or child:IsA("Frame") then
+                    child.Size = UDim2.new(0, elementW, 0, elementH)
+                    child.Position = UDim2.new(0, padX, 0, y)
+                    y = y + elementH + spacing
+                end
+            end
+        end
+    end
+end
+
+-- ========== END RESPONSIVE SECTION CONTENT ==========
+
 local function updateContentPositions()
     -- Update sidebar size
     sidebar.Size = UDim2.new(0, 140, 0, mainFrame.Size.Y.Offset - 80)
-    
     -- Update content frame size
     contentFrame.Size = UDim2.new(0, mainFrame.Size.X.Offset - 170, 0, mainFrame.Size.Y.Offset - 80)
-    
     -- Update underline
     underline.Size = UDim2.new(1, 0, 0, 4)
-    
     -- Update resize corner position
-    resizeCorner.Position = UDim2.new(1, -32, 1, -32) -- Was -20, now -32 for new size
+    resizeCorner.Position = UDim2.new(1, -20, 1, -20)
+    -- Responsive section contents
+    ResizeSectionContents()
 end
 
 resizeCorner.InputBegan:Connect(function(input)
@@ -171,27 +204,30 @@ resizeCorner.InputBegan:Connect(function(input)
         resizing = true
         resizeStart = input.Position
         startSize = mainFrame.Size
-        
-        -- No visual feedback (resizeIndicator always transparent)
+        -- Visual feedback
+        resizeIndicator.BackgroundTransparency = 0.3
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                resizing = false
+                resizeIndicator.BackgroundTransparency = 0.7
+            end
+        end)
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
     if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or isTouch(input)) then
         local delta = input.Position - resizeStart
-        
         local newWidth = math.clamp(
             startSize.X.Offset + delta.X,
             MIN_WIDTH,
             MAX_WIDTH
         )
-        
         local newHeight = math.clamp(
             startSize.Y.Offset + delta.Y,
             MIN_HEIGHT,
             MAX_HEIGHT
         )
-        
         mainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
         updateContentPositions()
     end
@@ -201,6 +237,7 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or isTouch(input) then
         if resizing then
             resizing = false
+            resizeIndicator.BackgroundTransparency = 0.7
         end
     end
 end)
@@ -208,7 +245,18 @@ end)
 -- Touch-specific resize handling for mobile
 resizeCorner.TouchTap:Connect(function() end) -- Prevents accidental taps
 
--- Removed hover/drag feedback, since resizeIndicator is always invisible now.
+-- Add hover effect for desktop
+resizeCorner.MouseEnter:Connect(function()
+    if not IS_MOBILE then
+        resizeIndicator.BackgroundTransparency = 0.5
+    end
+end)
+
+resizeCorner.MouseLeave:Connect(function()
+    if not resizing and not IS_MOBILE then
+        resizeIndicator.BackgroundTransparency = 0.7
+    end
+end)
 
 -- TABS
 local _TABS = {
@@ -287,12 +335,14 @@ local function createSidebarButton(text, yPos, idx)
         tabSections[text].Visible = true
         setButtonActive(idx)
         if tabCallbacks[text] then tabCallbacks[text]() end
+        ResizeSectionContents()
     end)
     button.TouchTap:Connect(function()
         for _, sec in pairs(tabSections) do sec.Visible = false end
         tabSections[text].Visible = true
         setButtonActive(idx)
         if tabCallbacks[text] then tabCallbacks[text]() end
+        ResizeSectionContents()
     end)
     sidebarButtons[idx] = { ButtonFrame = buttonFrame, TextButton = button }
     return buttonFrame
@@ -409,6 +459,7 @@ function Eps1llonUI:AddButton(tab, opts)
     btn.TextYAlignment = Enum.TextYAlignment.Center
     btn.MouseButton1Click:Connect(function() if opts.Callback then opts.Callback() end end)
     btn.TouchTap:Connect(function() if opts.Callback then opts.Callback() end end)
+    ResizeSectionContents()
     return btn
 end
 
@@ -425,6 +476,7 @@ function Eps1llonUI:AddLabel(tab, opts)
     lbl.BackgroundTransparency = 1
     lbl.TextXAlignment = opts.TextXAlignment or Enum.TextXAlignment.Left
     lbl.TextYAlignment = opts.TextYAlignment or Enum.TextYAlignment.Center
+    ResizeSectionContents()
     return lbl
 end
 
@@ -478,6 +530,7 @@ function Eps1llonUI:AddToggle(tab, opts)
         end
     end)
     pillow.TouchTap:Connect(function() setToggle(not value) end)
+    ResizeSectionContents()
     return container
 end
 
@@ -555,6 +608,7 @@ function Eps1llonUI:AddSlider(tab, opts)
             setSliderPos(input.Position.X - barBG.AbsolutePosition.X)
         end
     end)
+    ResizeSectionContents()
     return frame, valText
 end
 
@@ -590,7 +644,6 @@ end
 function Eps1llonUI:SetSize(width, height)
     width = math.clamp(width, MIN_WIDTH, MAX_WIDTH)
     height = math.clamp(height, MIN_HEIGHT, MAX_HEIGHT)
-    
     mainFrame.Size = UDim2.new(0, width, 0, height)
     updateContentPositions()
 end
