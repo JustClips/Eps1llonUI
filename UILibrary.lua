@@ -130,6 +130,86 @@ outlineContentFrame.Thickness = 2
 outlineContentFrame.Color = Color3.fromRGB(31, 81, 138)
 outlineContentFrame.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
+-- RESIZE CORNER (Bottom-Right) | EDITED SECTION
+local resizeCorner = Instance.new('Frame', mainFrame)
+resizeCorner.Size = UDim2.new(0, 32, 0, 32) -- Was 20x20, now 32x32 for a larger drag zone
+resizeCorner.Position = UDim2.new(1, -32, 1, -32) -- Adjusted for new size
+resizeCorner.BackgroundTransparency = 1
+resizeCorner.Active = true
+resizeCorner.ZIndex = 10
+
+-- Visual indicator for resize corner (now always 100% transparent/invisible)
+local resizeIndicator = Instance.new('Frame', resizeCorner)
+resizeIndicator.Size = UDim2.new(0, 24, 0, 24) -- Was 12x12, scale up for hitbox but remains invisible
+resizeIndicator.Position = UDim2.new(1, -24, 1, -24)
+resizeIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+resizeIndicator.BackgroundTransparency = 1 -- 100% transparent, invisible always
+resizeIndicator.BorderSizePixel = 0
+Instance.new('UICorner', resizeIndicator).CornerRadius = UDim.new(0, 2)
+
+-- Resize logic
+local MIN_WIDTH, MIN_HEIGHT = 400, 300
+local MAX_WIDTH, MAX_HEIGHT = 1000, 700
+local resizing, resizeStart, startSize = false, nil, nil
+
+local function updateContentPositions()
+    -- Update sidebar size
+    sidebar.Size = UDim2.new(0, 140, 0, mainFrame.Size.Y.Offset - 80)
+    
+    -- Update content frame size
+    contentFrame.Size = UDim2.new(0, mainFrame.Size.X.Offset - 170, 0, mainFrame.Size.Y.Offset - 80)
+    
+    -- Update underline
+    underline.Size = UDim2.new(1, 0, 0, 4)
+    
+    -- Update resize corner position
+    resizeCorner.Position = UDim2.new(1, -32, 1, -32) -- Was -20, now -32 for new size
+end
+
+resizeCorner.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or isTouch(input) then
+        resizing = true
+        resizeStart = input.Position
+        startSize = mainFrame.Size
+        
+        -- No visual feedback (resizeIndicator always transparent)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or isTouch(input)) then
+        local delta = input.Position - resizeStart
+        
+        local newWidth = math.clamp(
+            startSize.X.Offset + delta.X,
+            MIN_WIDTH,
+            MAX_WIDTH
+        )
+        
+        local newHeight = math.clamp(
+            startSize.Y.Offset + delta.Y,
+            MIN_HEIGHT,
+            MAX_HEIGHT
+        )
+        
+        mainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+        updateContentPositions()
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or isTouch(input) then
+        if resizing then
+            resizing = false
+        end
+    end
+end)
+
+-- Touch-specific resize handling for mobile
+resizeCorner.TouchTap:Connect(function() end) -- Prevents accidental taps
+
+-- Removed hover/drag feedback, since resizeIndicator is always invisible now.
+
 -- TABS
 local _TABS = {
     "Configuration",
@@ -224,6 +304,92 @@ for i, name in ipairs(_TABS) do
 end
 tabSections[_TABS[1]].Visible = true
 setButtonActive(1)
+
+-- Minimize Button & Logic
+local minimizedButton = Instance.new('ImageButton', gui)
+minimizedButton.Name = "Eps1llonMini"
+minimizedButton.Size = UDim2.new(0, 55, 0, 55)
+minimizedButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+minimizedButton.BackgroundTransparency = 0.08
+minimizedButton.AutoButtonColor = true
+minimizedButton.Visible = false
+Instance.new('UICorner', minimizedButton).CornerRadius = UDim.new(1, 999)
+local esText = Instance.new('TextLabel', minimizedButton)
+esText.Size = UDim2.new(1, 0, 1, 0)
+esText.Position = UDim2.new(0, 0, 0, 0)
+esText.BackgroundTransparency = 1
+esText.Text = "ES"
+esText.TextColor3 = Color3.fromRGB(255,255,255)
+esText.TextStrokeTransparency = 0.25
+esText.Font = Enum.Font.GothamBlack
+esText.TextScaled = true
+esText.ZIndex = 2
+esText.TextYAlignment = Enum.TextYAlignment.Center
+esText.TextXAlignment = Enum.TextXAlignment.Center
+esText.TextSize = 12
+
+local function animateObj(obj, scaleFrom, scaleTo, transpFrom, transpTo, duration, cb)
+    local scaleObj = obj:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", obj)
+    scaleObj.Scale = scaleFrom
+    obj.BackgroundTransparency = transpFrom
+    obj.Visible = true
+    local tw1 = TweenService:Create(scaleObj, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = scaleTo})
+    local tw2 = TweenService:Create(obj, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = transpTo})
+    tw1:Play() tw2:Play()
+    tw1.Completed:Connect(function() if cb then cb() end end)
+end
+
+local draggingMini, dragStartMini, startPosMini
+minimizedButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or isTouch(input) then
+        draggingMini = true
+        dragStartMini = input.Position
+        startPosMini = minimizedButton.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then draggingMini = false end
+        end)
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if draggingMini and (input.UserInputType == Enum.UserInputType.MouseMovement or isTouch(input)) then
+        local delta = input.Position - dragStartMini
+        minimizedButton.Position = UDim2.new(
+            startPosMini.X.Scale, startPosMini.X.Offset + delta.X,
+            startPosMini.Y.Scale, startPosMini.Y.Offset + delta.Y
+        )
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or isTouch(input) then draggingMini = false end
+end)
+
+local function setMainVisible(val)
+    mainFrame.Visible = val
+    minimizedButton.Visible = not val
+end
+
+-- Updated minimize click to account for dynamic sizing
+minimize.MouseButton1Click:Connect(function()
+    animateObj(mainFrame, 1, 0, 0.14, 1, 0.22, function()
+        setMainVisible(false)
+        -- Position minimized button relative to screen size
+        minimizedButton.Position = UDim2.new(0, 20, 0, 20)
+        animateObj(minimizedButton, 0, 1, 1, 0.08, 0.22)
+    end)
+end)
+
+minimizedButton.MouseButton1Click:Connect(function()
+    animateObj(minimizedButton, 1, 0, 0.08, 1, 0.18, function()
+        setMainVisible(true)
+        animateObj(mainFrame, 0, 1, 1, 0.14, 0.23)
+    end)
+end)
+minimizedButton.TouchTap:Connect(function()
+    animateObj(minimizedButton, 1, 0, 0.08, 1, 0.18, function()
+        setMainVisible(true)
+        animateObj(mainFrame, 0, 1, 1, 0.14, 0.23)
+    end)
+end)
 
 -- PUBLIC: API
 function Eps1llonUI:AddButton(tab, opts)
@@ -397,84 +563,6 @@ function Eps1llonUI:SetTabCallback(tab, callback)
     tabCallbacks[tab] = callback
 end
 
--- Minimize Button & Logic
-local minimizedButton = Instance.new('ImageButton', gui)
-minimizedButton.Name = "Eps1llonMini"
-minimizedButton.Size = UDim2.new(0, 55, 0, 55)
-minimizedButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-minimizedButton.BackgroundTransparency = 0.08
-minimizedButton.AutoButtonColor = true
-minimizedButton.Visible = false
-Instance.new('UICorner', minimizedButton).CornerRadius = UDim.new(1, 999)
-local esText = Instance.new('TextLabel', minimizedButton)
-esText.Size = UDim2.new(1, 0, 1, 0)
-esText.Position = UDim2.new(0, 0, 0, 0)
-esText.BackgroundTransparency = 1
-esText.Text = "ES"
-esText.TextColor3 = Color3.fromRGB(255,255,255)
-esText.TextStrokeTransparency = 0.25
-esText.Font = Enum.Font.GothamBlack
-esText.TextScaled = true
-esText.ZIndex = 2
-esText.TextYAlignment = Enum.TextYAlignment.Center
-esText.TextXAlignment = Enum.TextXAlignment.Center
-esText.TextSize = 12
-local function animateObj(obj, scaleFrom, scaleTo, transpFrom, transpTo, duration, cb)
-    local scaleObj = obj:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", obj)
-    scaleObj.Scale = scaleFrom
-    obj.BackgroundTransparency = transpFrom
-    obj.Visible = true
-    local tw1 = TweenService:Create(scaleObj, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = scaleTo})
-    local tw2 = TweenService:Create(obj, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = transpTo})
-    tw1:Play() tw2:Play()
-    tw1.Completed:Connect(function() if cb then cb() end end)
-end
-local draggingMini, dragStartMini, startPosMini
-minimizedButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or isTouch(input) then
-        draggingMini = true
-        dragStartMini = input.Position
-        startPosMini = minimizedButton.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then draggingMini = false end
-        end)
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if draggingMini and (input.UserInputType == Enum.UserInputType.MouseMovement or isTouch(input)) then
-        local delta = input.Position - dragStartMini
-        minimizedButton.Position = UDim2.new(
-            startPosMini.X.Scale, startPosMini.X.Offset + delta.X,
-            startPosMini.Y.Scale, startPosMini.Y.Offset + delta.Y
-        )
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or isTouch(input) then draggingMini = false end
-end)
-local function setMainVisible(val)
-     mainFrame.Visible = val
-    minimizedButton.Visible = not val
-end
-minimize.MouseButton1Click:Connect(function()
-    animateObj(mainFrame, 1, 0, 0.14, 1, 0.22, function()
-        setMainVisible(false)
-        animateObj(minimizedButton, 0, 1, 1, 0.08, 0.22)
-    end)
-end)
-minimizedButton.MouseButton1Click:Connect(function()
-    animateObj(minimizedButton, 1, 0, 0.08, 1, 0.18, function()
-        setMainVisible(true)
-        animateObj(mainFrame, 0, 1, 1, 0.14, 0.23)
-    end)
-end)
-minimizedButton.TouchTap:Connect(function()
-    animateObj(minimizedButton, 1, 0, 0.08, 1, 0.18, function()
-        setMainVisible(true)
-        animateObj(mainFrame, 0, 1, 1, 0.14, 0.23)
-    end)
-end)
-
 -- Scale for Mobile/Tablet
 function Eps1llonUI:SetScale(val) UIScale.Scale = val end
 
@@ -483,5 +571,28 @@ function Eps1llonUI:GetSection(tab) return tabSections[tab] end
 
 -- API: Remove GUI
 function Eps1llonUI:Destroy() gui:Destroy() end
+
+-- NEW RESIZE API FUNCTIONS
+function Eps1llonUI:SetSizeConstraints(minWidth, minHeight, maxWidth, maxHeight)
+    MIN_WIDTH = minWidth or MIN_WIDTH
+    MIN_HEIGHT = minHeight or MIN_HEIGHT
+    MAX_WIDTH = maxWidth or MAX_WIDTH
+    MAX_HEIGHT = maxHeight or MAX_HEIGHT
+end
+
+function Eps1llonUI:GetSize()
+    return {
+        Width = mainFrame.Size.X.Offset,
+        Height = mainFrame.Size.Y.Offset
+    }
+end
+
+function Eps1llonUI:SetSize(width, height)
+    width = math.clamp(width, MIN_WIDTH, MAX_WIDTH)
+    height = math.clamp(height, MIN_HEIGHT, MAX_HEIGHT)
+    
+    mainFrame.Size = UDim2.new(0, width, 0, height)
+    updateContentPositions()
+end
 
 return Eps1llonUI
