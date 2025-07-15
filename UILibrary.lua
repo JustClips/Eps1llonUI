@@ -13,33 +13,58 @@ local function isTouch(input) return input.UserInputType == Enum.UserInputType.T
 
 -- CREATE SCREENGUI
 local gui = Instance.new('ScreenGui')
-gui.Name            = 'Eps1llonHub'
-gui.ResetOnSpawn    = false
-gui.IgnoreGuiInset  = true
+gui.Name               = 'Eps1llonHub'
+gui.ResetOnSpawn       = false
+gui.IgnoreGuiInset     = true
 
--- protect and parent to PlayerGui only
+-- protect gui if possible
 if syn and syn.protect_gui then
     syn.protect_gui(gui)
 end
-gui.Parent = player:WaitForChild('PlayerGui')
+
+-- choose a hidden container if available, else PlayerGui
+local hiddenContainer =
+    (gethui and gethui())                                    -- SirHurt / Krnl / Edo
+    or (syn and syn.get_hidden_ui and syn.get_hidden_ui())   -- Synapse hidden UI
+    or player:WaitForChild('PlayerGui')
+
+gui.Parent = hiddenContainer
+
+-- guard against removal
+gui.AncestryChanged:Connect(function(child, parent)
+    if not parent then
+        task.wait(0.05)
+        if not gui.Parent then
+            gui.Parent = hiddenContainer
+        end
+    end
+end)
+
+-- re-parent on character respawn
+player.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if not gui.Parent then
+        gui.Parent = hiddenContainer
+    end
+end)
 
 -- MAIN FRAME
 local mainFrame = Instance.new('Frame', gui)
-mainFrame.Size                  = UDim2.new(0, 650, 0, 360)
-mainFrame.Position              = UDim2.new(0.5, -325, 0.5, -180)
-mainFrame.BackgroundColor3      = Color3.fromRGB(25, 25, 25)
-mainFrame.BackgroundTransparency= 0.14
-mainFrame.Active                = true
-mainFrame.Draggable             = false
+mainFrame.Size                   = UDim2.new(0, 650, 0, 360)
+mainFrame.Position               = UDim2.new(0.5, -325, 0.5, -180)
+mainFrame.BackgroundColor3       = Color3.fromRGB(25, 25, 25)
+mainFrame.BackgroundTransparency = 0.14
+mainFrame.Active                 = true
+mainFrame.Draggable              = false
 Instance.new('UICorner', mainFrame).CornerRadius = UDim.new(0, 8)
 local UIScale = Instance.new("UIScale", mainFrame)
 UIScale.Scale = 1
 
 -- HEADER (DRAG)
 local headerFrame = Instance.new('Frame', mainFrame)
-headerFrame.Size               = UDim2.new(1, 0, 0, 30)
+headerFrame.Size                   = UDim2.new(1, 0, 0, 30)
 headerFrame.BackgroundTransparency = 1
-headerFrame.Active             = true
+headerFrame.Active                 = true
 
 do
     local dragging, dragStart, startPos = false, nil, nil
@@ -70,14 +95,14 @@ do
 end
 
 local title = Instance.new('TextLabel', headerFrame)
-title.Size              = UDim2.new(1, -65, 1, 0)
-title.Position          = UDim2.new(0, 10, 0, 0)
-title.Text              = 'Eps1llon Hub'
-title.Font              = Enum.Font.GothamBold
-title.TextSize          = 16
-title.TextColor3        = Color3.fromRGB(255,255,255)
+title.Size                   = UDim2.new(1, -65, 1, 0)
+title.Position               = UDim2.new(0, 10, 0, 0)
+title.Text                   = 'Eps1llon Hub'
+title.Font                   = Enum.Font.GothamBold
+title.TextSize               = 16
+title.TextColor3             = Color3.fromRGB(255,255,255)
 title.BackgroundTransparency = 1
-title.TextXAlignment    = Enum.TextXAlignment.Left
+title.TextXAlignment         = Enum.TextXAlignment.Left
 
 local underline = Instance.new('Frame', mainFrame)
 underline.Size             = UDim2.new(1, 0, 0, 4)
@@ -86,31 +111,31 @@ underline.BackgroundColor3 = Color3.fromRGB(31, 81, 138)
 underline.BorderSizePixel  = 0
 
 local minimize = Instance.new('TextButton', headerFrame)
-minimize.Size              = UDim2.new(0, 25, 0, 25)
-minimize.Position          = UDim2.new(1, -50, 0, 2)
-minimize.Text              = '-'
-minimize.Font              = Enum.Font.GothamBold
-minimize.TextSize          = 20
-minimize.TextColor3        = Color3.fromRGB(255,255,255)
+minimize.Size                   = UDim2.new(0, 25, 0, 25)
+minimize.Position               = UDim2.new(1, -50, 0, 2)
+minimize.Text                   = '-'
+minimize.Font                   = Enum.Font.GothamBold
+minimize.TextSize               = 20
+minimize.TextColor3             = Color3.fromRGB(255,255,255)
 minimize.BackgroundTransparency = 1
 
 local close = Instance.new('TextButton', headerFrame)
-close.Size                 = UDim2.new(0, 25, 0, 25)
-close.Position             = UDim2.new(1, -25, 0, 2)
-close.Text                 = 'X'
-close.Font                 = Enum.Font.GothamBold
-close.TextSize             = 16
-close.TextColor3           = Color3.fromRGB(255,255,255)
+close.Size                   = UDim2.new(0, 25, 0, 25)
+close.Position               = UDim2.new(1, -25, 0, 2)
+close.Text                   = 'X'
+close.Font                   = Enum.Font.GothamBold
+close.TextSize               = 16
+close.TextColor3             = Color3.fromRGB(255,255,255)
 close.BackgroundTransparency = 1
 close.MouseButton1Click:Connect(function() gui:Destroy() end)
 
 -- SIDEBAR
 local sidebar = Instance.new('Frame', mainFrame)
-sidebar.Size              = UDim2.new(0, 140, 0, 280)
-sidebar.Position          = UDim2.new(0, 10, 0, 50)
-sidebar.BackgroundColor3  = Color3.fromRGB(30,30,30)
+sidebar.Size                   = UDim2.new(0, 140, 0, 280)
+sidebar.Position               = UDim2.new(0, 10, 0, 50)
+sidebar.BackgroundColor3       = Color3.fromRGB(30,30,30)
 sidebar.BackgroundTransparency = 0.12
-sidebar.BorderSizePixel   = 0
+sidebar.BorderSizePixel        = 0
 Instance.new('UICorner', sidebar).CornerRadius = UDim.new(0,6)
 local outline = Instance.new('UIStroke', sidebar)
 outline.Thickness         = 2
