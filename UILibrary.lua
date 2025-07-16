@@ -52,7 +52,7 @@ end)
 local mainFrame = Instance.new('Frame', gui)
 mainFrame.Size                   = UDim2.new(0, 650, 0, 360)
 mainFrame.Position               = UDim2.new(0.5, -325, 0.5, -180)
-mainFrame.BackgroundColor3       = Color3.fromRGB(25, 25, 25)
+mainFrame.BackgroundColor3       = Color3.fromRGB(25, 25, 30)
 mainFrame.BackgroundTransparency = 0.14
 mainFrame.Active                 = true
 mainFrame.Draggable              = false
@@ -107,7 +107,7 @@ title.TextXAlignment         = Enum.TextXAlignment.Left
 local underline = Instance.new('Frame', mainFrame)
 underline.Size             = UDim2.new(1, 0, 0, 4)
 underline.Position         = UDim2.new(0, 0, 0, 30)
-underline.BackgroundColor3 = Color3.fromRGB(31, 81, 138)
+underline.BackgroundColor3 = Color3.fromRGB(31, 81, 178) -- blue accent
 underline.BorderSizePixel  = 0
 
 local minimize = Instance.new('TextButton', headerFrame)
@@ -133,19 +133,19 @@ close.MouseButton1Click:Connect(function() gui:Destroy() end)
 local sidebar = Instance.new('Frame', mainFrame)
 sidebar.Size                   = UDim2.new(0, 140, 0, 280)
 sidebar.Position               = UDim2.new(0, 10, 0, 50)
-sidebar.BackgroundColor3       = Color3.fromRGB(30,30,30)
+sidebar.BackgroundColor3       = Color3.fromRGB(30,30,35)
 sidebar.BackgroundTransparency = 0.12
 sidebar.BorderSizePixel        = 0
 Instance.new('UICorner', sidebar).CornerRadius = UDim.new(0,6)
 local outline = Instance.new('UIStroke', sidebar)
 outline.Thickness         = 2
-outline.Color             = Color3.fromRGB(31,81,138)
+outline.Color             = Color3.fromRGB(31,81,178)
 outline.ApplyStrokeMode   = Enum.ApplyStrokeMode.Border
 
 local highlighter = Instance.new('Frame', sidebar)
 highlighter.Size           = UDim2.new(1, 0, 0, 30)
 highlighter.Position       = UDim2.new(0, 0, 0, 10)
-highlighter.BackgroundColor3 = Color3.fromRGB(31,81,138)
+highlighter.BackgroundColor3 = Color3.fromRGB(31,81,178)
 highlighter.BackgroundTransparency = 0.3
 highlighter.ZIndex         = 2
 Instance.new('UICorner', highlighter).CornerRadius = UDim.new(1,999)
@@ -154,25 +154,17 @@ Instance.new('UICorner', highlighter).CornerRadius = UDim.new(1,999)
 local contentFrame = Instance.new('Frame', mainFrame)
 contentFrame.Size             = UDim2.new(0, 480, 0, 280)
 contentFrame.Position         = UDim2.new(0, 160, 0, 50)
-contentFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+contentFrame.BackgroundColor3 = Color3.fromRGB(40,40,45)
 contentFrame.BackgroundTransparency = 0.7
 contentFrame.BorderSizePixel  = 0
 Instance.new('UICorner', contentFrame).CornerRadius = UDim.new(0,6)
 local outlineContentFrame = Instance.new('UIStroke', contentFrame)
 outlineContentFrame.Thickness = 2
-outlineContentFrame.Color     = Color3.fromRGB(31,81,138)
+outlineContentFrame.Color     = Color3.fromRGB(31,81,178)
 outlineContentFrame.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 -- TABS SETUP
 local _TABS = {"Configuration","Combat","ESP","Inventory","Misc","UI Settings"}
-local iconData = {
-    Configuration="134572329997100",
-    Combat       ="94883448905030",
-    ESP          ="92313485402528",
-    Inventory    ="135628846657243",
-    Misc         ="121583805460244",
-    ["UI Settings"]="93991072023597",
-}
 local sidebarButtons, tabSections, tabCallbacks = {}, {}, {}
 local DEFAULT_COLOR, ACTIVE_COLOR = Color3.fromRGB(210,210,210), Color3.fromRGB(255,255,255)
 local DEFAULT_SIZE, ACTIVE_SIZE = 16, 18
@@ -213,26 +205,16 @@ local function createSidebarButton(text, y, idx)
     frame.BackgroundTransparency = 1
     frame.ZIndex            = 3
 
-    if iconData[text] then
-        local img = Instance.new('ImageLabel', frame)
-        img.Size               = UDim2.new(0,24,0,24)
-        img.Position           = UDim2.new(0,6,0.5,-12)
-        img.BackgroundTransparency = 1
-        img.Image              = "rbxassetid://"..iconData[text]
-        img.ImageColor3        = Color3.new(1,1,1)
-        img.ScaleType          = Enum.ScaleType.Fit
-        img.ZIndex             = 4
-    end
-
     local btn = Instance.new('TextButton', frame)
-    btn.Size                = UDim2.new(1,-34,1,0)
-    btn.Position            = UDim2.new(0,34,0,0)
+    btn.Size                = UDim2.new(1,0,1,0)
+    btn.Position            = UDim2.new(0,0,0,0)
     btn.BackgroundTransparency = 1
     btn.Text                = text
     btn.Font                = Enum.Font.GothamBold
     btn.TextSize            = DEFAULT_SIZE
     btn.TextColor3          = DEFAULT_COLOR
-    btn.TextXAlignment      = Enum.TextXAlignment.Left
+    btn.TextXAlignment      = Enum.TextXAlignment.Center   -- CENTERED HORIZONTALLY
+    btn.TextYAlignment      = Enum.TextYAlignment.Center   -- CENTERED VERTICALLY
     btn.ZIndex              = 5
     btn.MouseButton1Click:Connect(function()
         for _,s in pairs(tabSections) do s.Visible = false end
@@ -319,7 +301,7 @@ function Eps1llonUI:AddToggle(tab, opts)
     local pillow = Instance.new("Frame", cont)
     pillow.Size             = UDim2.new(0,52,0,24)
     pillow.Position         = UDim2.new(1,-60,0.5,-12)
-    pillow.BackgroundColor3 = opts.Default and Color3.fromRGB(43,110,158) or Color3.fromRGB(44,44,47)
+    pillow.BackgroundColor3 = opts.Default and Color3.fromRGB(43,110,178) or Color3.fromRGB(44,44,47)
     pillow.BorderSizePixel  = 0
     Instance.new("UICorner", pillow).CornerRadius = UDim.new(1,999)
 
@@ -333,7 +315,7 @@ function Eps1llonUI:AddToggle(tab, opts)
     local value = opts.Default and true or false
     local function setToggle(val)
         value = val
-        pillow.BackgroundColor3 = val and Color3.fromRGB(43,110,158) or Color3.fromRGB(44,44,47)
+        pillow.BackgroundColor3 = val and Color3.fromRGB(43,110,178) or Color3.fromRGB(44,44,47)
         TweenService:Create(knob, TweenInfo.new(0.18, Enum.EasingStyle.Quad), {
             Position = val and UDim2.new(1,-22,0,2) or UDim2.new(0,2,0,2)
         }):Play()
@@ -383,7 +365,7 @@ function Eps1llonUI:AddSlider(tab, opts)
     local fill = Instance.new("Frame", barBG)
     fill.Size                 = UDim2.new(((opts.Default or opts.Min)-opts.Min)/(opts.Max-opts.Min),0,1,0)
     fill.Position             = UDim2.new(0,0,0,0)
-    fill.BackgroundColor3     = Color3.fromRGB(43,110,158)
+    fill.BackgroundColor3     = Color3.fromRGB(43,110,178)
     fill.BorderSizePixel      = 0
     Instance.new("UICorner", fill).CornerRadius = UDim.new(1,999)
 
@@ -521,6 +503,7 @@ end
 
 -- THEME HANDLING
 local themes = {
+    Blue   = { main = Color3.fromRGB(25,25,30),    accent = Color3.fromRGB(31,81,178)  },
     Red    = { main = Color3.fromRGB(35,25,25),    accent = Color3.fromRGB(255,69,69)   },
     Green  = { main = Color3.fromRGB(25,35,25),    accent = Color3.fromRGB(69,255,69)   },
     Purple = { main = Color3.fromRGB(25,25,35),    accent = Color3.fromRGB(138,43,226)  },
@@ -531,7 +514,7 @@ local themes = {
     Brown  = { main = Color3.fromRGB(60,40,20),    accent = Color3.fromRGB(160,82,45)   },
     Pink   = { main = Color3.fromRGB(35,20,30),    accent = Color3.fromRGB(255,105,180) },
 }
-local currentTheme = "Red"
+local currentTheme = "Blue"
 local function applyTheme(name)
     local t = themes[name]
     if not t then return end
@@ -610,7 +593,7 @@ do
     themeLabel.BackgroundTransparency = 1
     themeLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    local themeNames = {"Red","Green","Purple","Yellow","Black","Orange","White","Brown","Pink"}
+    local themeNames = {"Blue","Red","Green","Purple","Yellow","Black","Orange","White","Brown","Pink"}
 
     local themeBtn = Instance.new("TextButton", row2)
     themeBtn.Size            = UDim2.new(0.4, 0, 1, 0)
