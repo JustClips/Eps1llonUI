@@ -1,50 +1,56 @@
---// Eps1llonUI Library | Modular, Mobile-Ready GUI (2025)
---// Built for external/executor injection. Uses your design & layout.
-
+--// Eps1llonUI Library | CoreGui-Safe, Modular, Mobile-Ready GUI (2025)
+--// For executor/external use. CoreGui only. Fully persistent, self-repairing.
 local Eps1llonUI = {}
-Eps1llonUI._VERSION = "2025.07.11"
+Eps1llonUI._VERSION = "2025.07.18"
 
-local player             = game.Players.LocalPlayer
-local TweenService       = game:GetService('TweenService')
-local UserInputService   = game:GetService('UserInputService')
+local player           = game.Players.LocalPlayer
+local TweenService     = game:GetService('TweenService')
+local UserInputService = game:GetService('UserInputService')
+local CoreGui          = game:GetService("CoreGui")
 
 local IS_MOBILE = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
 local function isTouch(input) return input.UserInputType == Enum.UserInputType.Touch end
 
--- CREATE SCREENGUI
+--=== [ FIND or CREATE MAIN GUI ] ===--
+local GUI_NAME = 'Eps1llonHub'
+
+-- Destroy old
+pcall(function()
+    if CoreGui:FindFirstChild(GUI_NAME) then
+        CoreGui[GUI_NAME]:Destroy()
+    end
+end)
+
+-- Create ScreenGui in CoreGui
 local gui = Instance.new('ScreenGui')
-gui.Name               = 'Eps1llonHub'
-gui.ResetOnSpawn       = false
-gui.IgnoreGuiInset     = true
+gui.Name = GUI_NAME
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
 
--- protect gui if possible
-if syn and syn.protect_gui then
-    syn.protect_gui(gui)
-end
+-- protect gui if possible (synapse/krnl)
+pcall(function()
+    if syn and syn.protect_gui then
+        syn.protect_gui(gui)
+    end
+end)
 
--- choose a hidden container if available, else PlayerGui
-local hiddenContainer =
-    (gethui and gethui())                                    -- SirHurt / Krnl / Edo
-    or (syn and syn.get_hidden_ui and syn.get_hidden_ui())   -- Synapse hidden UI
-    or player:WaitForChild('PlayerGui')
+gui.Parent = CoreGui
 
-gui.Parent = hiddenContainer
-
--- guard against removal
-gui.AncestryChanged:Connect(function(child, parent)
+-- Self-repair: if UI is removed, reparent to CoreGui
+gui.AncestryChanged:Connect(function(_, parent)
     if not parent then
-        task.wait(0.05)
+        task.wait(0.1)
         if not gui.Parent then
-            gui.Parent = hiddenContainer
+            gui.Parent = CoreGui
         end
     end
 end)
 
--- re-parent on character respawn
+-- Self-repair: on respawn
 player.CharacterAdded:Connect(function()
-    task.wait(0.5)
+    task.wait(0.2)
     if not gui.Parent then
-        gui.Parent = hiddenContainer
+        gui.Parent = CoreGui
     end
 end)
 
@@ -107,7 +113,7 @@ title.TextXAlignment         = Enum.TextXAlignment.Left
 local underline = Instance.new('Frame', mainFrame)
 underline.Size             = UDim2.new(1, 0, 0, 4)
 underline.Position         = UDim2.new(0, 0, 0, 30)
-underline.BackgroundColor3 = Color3.fromRGB(31, 81, 178) -- blue accent
+underline.BackgroundColor3 = Color3.fromRGB(31, 81, 178)
 underline.BorderSizePixel  = 0
 
 local minimize = Instance.new('TextButton', headerFrame)
@@ -213,8 +219,8 @@ local function createSidebarButton(text, y, idx)
     btn.Font                = Enum.Font.GothamBold
     btn.TextSize            = DEFAULT_SIZE
     btn.TextColor3          = DEFAULT_COLOR
-    btn.TextXAlignment      = Enum.TextXAlignment.Center   -- CENTERED HORIZONTALLY
-    btn.TextYAlignment      = Enum.TextYAlignment.Center   -- CENTERED VERTICALLY
+    btn.TextXAlignment      = Enum.TextXAlignment.Center
+    btn.TextYAlignment      = Enum.TextYAlignment.Center
     btn.ZIndex              = 5
     btn.MouseButton1Click:Connect(function()
         for _,s in pairs(tabSections) do s.Visible = false end
@@ -236,6 +242,7 @@ tabSections[_TABS[1]].Visible = true
 setButtonActive(1)
 
 -- PUBLIC API
+
 function Eps1llonUI:AddButton(tab, opts)
     local sec = tabSections[tab]
     assert(sec, "Tab "..tostring(tab).." does not exist.")
